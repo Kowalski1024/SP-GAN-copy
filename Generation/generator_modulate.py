@@ -147,6 +147,13 @@ class Generator(nn.Module):
             sigma=10.0, input_size=3, encoded_size=channels // 2
         )
 
+        self.style = nn.Sequential(
+            nn.Linear(self.z_dim, self.z_dim),
+            nn.LeakyReLU(inplace=True),
+            nn.Linear(self.z_dim, self.z_dim),
+            nn.LeakyReLU(inplace=True),
+        )
+
         self.global_conv = nn.Sequential(
             nn.Linear(channels, channels),
             nn.LeakyReLU(inplace=True),
@@ -169,6 +176,7 @@ class Generator(nn.Module):
     def forward(self, pos, edge_index, batch, styles):
         results = []
         for style in styles:
+            style = self.style(style)
             x = self.encoder(pos)
             x = self.conv1(x, pos, edge_index, style)
             x = self.conv2(x, pos, edge_index, style)
