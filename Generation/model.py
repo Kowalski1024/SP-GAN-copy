@@ -36,7 +36,7 @@ from Common.visu_utils import (
     plot_pcd_multi_rows,
 )
 from tqdm import tqdm
-from Generation.gen_norm import Generator
+from Generation.generator_modulate import Generator
 from Generation.Discriminator import Discriminator
 
 from Common.network_utils import *
