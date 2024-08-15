@@ -156,12 +156,12 @@ class Generator(nn.Module):
         self.global_conv = nn.Sequential(
             nn.Linear(channels, channels),
             nn.LeakyReLU(inplace=True),
-            nn.Linear(channels, channels),
+            nn.Linear(channels, 512),
             nn.LeakyReLU(inplace=True),
         )
 
         self.tail = nn.Sequential(
-            nn.Linear(channels * 2, channels),
+            nn.Linear(channels + 512, channels),
             nn.LeakyReLU(inplace=True),
             nn.Linear(channels, channels // 2),
             nn.LeakyReLU(inplace=True),
@@ -171,7 +171,6 @@ class Generator(nn.Module):
 
         self.conv1 = PointGNNConv(128, self.z_dim)
         self.conv2 = PointGNNConv(128, self.z_dim)
-        self.conv3 = PointGNNConv(128, self.z_dim)
 
     def forward(self, pos, edge_index, batch, styles):
         results = []
