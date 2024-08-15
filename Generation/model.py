@@ -36,7 +36,7 @@ from Common.visu_utils import (
     plot_pcd_multi_rows,
 )
 from tqdm import tqdm
-from Generation.generator_v2 import Generator
+from Generation.gen_norm import Generator
 from Generation.Discriminator import Discriminator
 
 from Common.network_utils import *
@@ -168,7 +168,6 @@ class Model(object):
     def noise_generator(self, bs=1, masks=None):
         noise = torch.randn(bs, self.opts.nz)
         sim_noise = Variable(noise).cuda()
-
         return sim_noise
     
     @staticmethod
