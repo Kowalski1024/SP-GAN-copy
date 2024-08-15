@@ -100,6 +100,13 @@ class PointGNNConv(gnn.MessagePassing):
         kwargs.setdefault("aggr", "max")
         super().__init__(**kwargs)
 
+        self.mlp_f = nn.Sequential(
+            nn.Linear(channels, channels // 2),
+            nn.LeakyReLU(inplace=True),
+            nn.Linear(channels // 2, channels),
+            nn.LeakyReLU(inplace=True),
+        )
+
         self.mlp_h = nn.Sequential(
             nn.Linear(channels, channels // 2),
             nn.LeakyReLU(inplace=True),
@@ -116,17 +123,16 @@ class PointGNNConv(gnn.MessagePassing):
         )
 
     def forward(self, x: Tensor, pos: Tensor, edge_index: Adj, w: Tensor) -> Tensor:
-        delta = self.mlp_h(x)
-        out = self.propagate(edge_index, x=x, pos=pos, delta=delta)
+        out = self.propagate(edge_index, x=x, pos=pos)
         for i, layer in enumerate(self.mlp_g):
-            out = layer(out, w)
-        return x + out, delta
+            out = self.mlp_g(out, w)
+        return x + out
 
-    def message(
-        self, pos_j: Tensor, pos_i: Tensor, x_i: Tensor, x_j: Tensor, delta_i: Tensor
-    ) -> Tensor:
-        # Use the passed delta_i directly, no need to calculate it here
-        return torch.cat([pos_j - pos_i + delta_i, x_j], dim=-1)
+    def message(self, pos_j: Tensor, pos_i: Tensor, x_i: Tensor,
+                x_j: Tensor) -> Tensor:
+        delta = self.mlp_h(x_i)
+        e = torch.cat([pos_j - pos_i + delta, x_j], dim=-1)
+        return self.mlp_f(e)
 
     def __repr__(self) -> str:
         return (
