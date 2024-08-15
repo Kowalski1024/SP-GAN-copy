@@ -36,7 +36,7 @@ from Common.visu_utils import (
     plot_pcd_multi_rows,
 )
 from tqdm import tqdm
-from Generation.generator_modulate import Generator
+from Generation.generator_norm import Generator
 from Generation.Discriminator import Discriminator
 
 from Common.network_utils import *
@@ -169,14 +169,16 @@ class Model(object):
         noise = torch.randn(bs, self.opts.nz)
         sim_noise = Variable(noise).cuda()
         return sim_noise
-    
+
     @staticmethod
     def fibonacci_sphere(samples=1000):
-        phi = torch.pi * (3. - torch.sqrt(torch.tensor(5.)))  # golden angle in radians
+        phi = torch.pi * (
+            3.0 - torch.sqrt(torch.tensor(5.0))
+        )  # golden angle in radians
 
         indices = torch.arange(samples)
         y = 1 - (indices / float(samples - 1)) * 2  # y goes from 1 to -1
-        radius = torch.sqrt(1 - y*y)  # radius at y
+        radius = torch.sqrt(1 - y * y)  # radius at y
 
         theta = phi * indices  # golden angle increment
 
@@ -192,7 +194,6 @@ class Model(object):
             return self.ball
         self.ball = self.fibonacci_sphere(samples=self.opts.np).cuda()
         return self.ball
-
 
     def train(self):
         global epoch
@@ -404,7 +405,7 @@ class Model(object):
         edge_index = knn_graph(x, k=6, batch=None, loop=False)
         x = Data(pos=x, edge_index=edge_index)
         x = x.cuda()
-        
+
         pcds_list = []
         title_list = []
         for i in range(grid_x):

@@ -56,6 +56,54 @@ class StyleLinearLayer(nn.Module):
         x = self.adain(x, w)
 
         return x
+    
+
+class PointGNNConv(gnn.MessagePassing):
+    r"""The PointGNN operator from the `"Point-GNN: Graph Neural Network for
+    3D Object Detection in a Point Cloud" <https://arxiv.org/abs/2003.01251>`_
+    paper.
+    """
+
+    def __init__(
+        self,
+        channels,
+        **kwargs,
+    ):
+        kwargs.setdefault("aggr", "max")
+        super().__init__(**kwargs)
+
+        self.mlp_h = nn.Sequential(
+            nn.Linear(channels, channels),
+            nn.LeakyReLU(inplace=True),
+            nn.Linear(channels, 3),
+            nn.Tanh(),
+        )
+
+        self.mlp_g = nn.Sequential(
+            nn.Linear(channels + 3, channels),
+            nn.LeakyReLU(inplace=True),
+            nn.Linear(channels, channels),
+        )
+
+    def forward(self, x: Tensor, pos: Tensor, edge_index: Adj) -> Tensor:
+        delta = self.mlp_h(x)
+        out = self.propagate(edge_index, x=x, pos=pos, delta=delta)
+        out = self.mlp_g(out)
+        return x + out
+
+    def message(
+        self, pos_j: Tensor, pos_i: Tensor, x_i: Tensor, x_j: Tensor, delta_i: Tensor
+    ) -> Tensor:
+        # Use the passed delta_i directly, no need to calculate it here
+        return torch.cat([pos_j - pos_i + delta_i, x_j], dim=-1)
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(\n"
+            f"  mlp_h={self.mlp_h},\n"
+            f"  mlp_g={self.mlp_g},\n"
+            f")"
+        )
 
 
 class GNNConv(nn.Module):
@@ -91,7 +139,7 @@ class SyntheticBlock(nn.Module):
         super().__init__()
         self.add_noise = True
 
-        self.gnn_conv = GNNConv(in_channels)
+        self.gnn_conv = PointGNNConv(in_channels)
         self.adaptive_norm = AdaptivePointNorm(in_channels, styles)
         self.leaky_relu = nn.LeakyReLU(inplace=True)
 
