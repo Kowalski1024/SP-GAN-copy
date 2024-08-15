@@ -82,7 +82,6 @@ class SynthesisLayer(torch.nn.Module):
 
         x = self.activation(x.add_(self.bias))
         return x
-    
 
 
 class PointGNNConv(gnn.MessagePassing):
@@ -101,9 +100,9 @@ class PointGNNConv(gnn.MessagePassing):
         super().__init__(**kwargs)
 
         self.mlp_f = nn.Sequential(
-            nn.Linear(channels, channels // 2),
+            nn.Linear(channels + 3, channels),
             nn.LeakyReLU(inplace=True),
-            nn.Linear(channels // 2, channels),
+            nn.Linear(channels, channels),
             nn.LeakyReLU(inplace=True),
         )
 
@@ -116,7 +115,6 @@ class PointGNNConv(gnn.MessagePassing):
 
         self.mlp_g = nn.ModuleList(
             [
-                SynthesisLayer(channels + 3, channels, z_dim),
                 SynthesisLayer(channels, channels, z_dim),
                 SynthesisLayer(channels, channels, z_dim),
             ]
@@ -125,11 +123,10 @@ class PointGNNConv(gnn.MessagePassing):
     def forward(self, x: Tensor, pos: Tensor, edge_index: Adj, w: Tensor) -> Tensor:
         out = self.propagate(edge_index, x=x, pos=pos)
         for i, layer in enumerate(self.mlp_g):
-            out = self.mlp_g(out, w)
+            out = layer(out, w)
         return x + out
 
-    def message(self, pos_j: Tensor, pos_i: Tensor, x_i: Tensor,
-                x_j: Tensor) -> Tensor:
+    def message(self, pos_j: Tensor, pos_i: Tensor, x_i: Tensor, x_j: Tensor) -> Tensor:
         delta = self.mlp_h(x_i)
         e = torch.cat([pos_j - pos_i + delta, x_j], dim=-1)
         return self.mlp_f(e)
@@ -147,7 +144,7 @@ class Generator(nn.Module):
     def __init__(self, *args, **kwargs):
         super(Generator, self).__init__()
         self.z_dim = 128
-        channels=128
+        channels = 128
 
         self.encoder = rff.layers.GaussianEncoding(
             sigma=10.0, input_size=3, encoded_size=channels // 2
@@ -176,10 +173,10 @@ class Generator(nn.Module):
         results = []
         for style in styles:
             x = self.encoder(pos)
-            x, _ = self.conv1(x, pos, edge_index, style)
-            x, _ = self.conv2(x, pos, edge_index, style)
+            x = self.conv1(x, pos, edge_index, style)
+            x = self.conv2(x, pos, edge_index, style)
             # x, _ = self.conv3(x, pos, edge_index, style)
-            
+
             h = gnn.global_max_pool(x, batch)
             h = self.global_conv(h)
             h = h.repeat(x.size(0), 1)

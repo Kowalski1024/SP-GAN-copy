@@ -748,7 +748,7 @@ def gen_loss(d_real, d_fake, gan="wgan", weight=1., d_real_p=None, d_fake_p=None
         #mse = nn.MSELoss()
         B = d_fake.size(0)
         #real_label_np = np.ones((B,))
-        fake_label_np = np.ones((B,))
+        fake_label_np = np.ones((B,1))
 
         if noise_label:
             # occasionally flip the labels when training the generator to fool the D
@@ -890,8 +890,8 @@ def dis_loss(d_real, d_fake, gan="wgan", weight=1.,d_real_p=None, d_fake_p=None,
         mse = nn.MSELoss()
         B = d_fake.size(0)
 
-        real_label_np = np.ones((B,))
-        fake_label_np = np.zeros((B,))
+        real_label_np = np.ones((B,1))
+        fake_label_np = np.zeros((B,1))
 
         if noise_label:
             real_label_np = smooth_labels(B,ran=[0.9,1.0])
