@@ -236,6 +236,7 @@ class Model(object):
             shuffle=True,
             num_workers=4,
             pin_memory=True,
+            drop_last=True,
         )
         self.num_batches = len(self.train_dataset) // self.opts.bs
 
