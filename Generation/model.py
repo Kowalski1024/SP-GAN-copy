@@ -19,14 +19,10 @@ from torch_geometric.utils import to_dense_batch
 
 # add for shape-preserving Loss
 from Common.point_operation import normalize_point_cloud
-from Generation.H5DataLoader import H5DataLoader
 from collections import namedtuple
 from torch_geometric.loader import DataLoader
 
-# from pointnet2.pointnet2_modules import PointNet2SAModule, PointNet2SAModuleMSG
-from Common.loss_utils import ChamferLoss, pairwise_CD
 from Common import point_operation
-from Common import data_utils as d_util
 from Common.loss_utils import (
     get_local_pair,
     compute_all_metrics2,
@@ -92,10 +88,6 @@ class Model(object):
             os.system(
                 "cp %s/loss_utils.py '%s/loss_utils.py'"
                 % (common_folder, self.opts.log_dir)
-            )
-            os.system(
-                "cp %s/H5DataLoader.py '%s/H5DataLoader.py'"
-                % (data_folder, self.opts.log_dir)
             )
 
     def build_model(self):
